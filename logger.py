@@ -1,41 +1,29 @@
-from config import LOG, LOG_GROUP_ID, MUSIC_BOT_NAME
+from pyrogram import filters
+
+import config
+from strings import get_command
 from SURAJM import app
-from SURAJM.utils.database import is_on_off
+from SURAJM.misc import SUDOERS
+from SURAJM.utils.database import add_off, add_on
+from SURAJM.utils.decorators.language import language
+
+# Commands
+LOGGER_COMMAND = get_command("LOGGER_COMMAND")
 
 
-async def play_logs(message, streamtype):
-    if await is_on_off(LOG):
-        if message.chat.username:
-            chatusername = f"@{message.chat.username}"
-        else:
-            chatusername = "ᴩʀɪᴠᴀᴛᴇ ᴄʜᴀᴛ"
-        logger_text = f"""
-╔════❰𝐏𝐋𝐀𝐘𝐈𝐍𝐆❱═══❍⊱❁۪۪
-
-◈ 𝐂𝐡𝐚𝐭 ➪ **{message.chat.title}**
-
-◈ 𝐂𝐡𝐚𝐭 𝐈𝐝 ➪ `{message.chat.id}`
-
-◈ 𝐔𝐬𝐞𝐫 ➪ **{message.from_user.mention}**
-
-◈ 𝐔𝐬𝐞𝐫𝐧𝐚𝐦𝐞 ➪ **@{message.from_user.username}**
-
-◈ 𝐈𝐝 ➪ `{message.from_user.id}`
-
-◈ 𝐂𝐡𝐚𝐭 𝐋𝐢𝐧𝐤 ➪ **{chatusername}**
-
-◈ 𝐒𝐞𝐚𝐫𝐜𝐡𝐞𝐝 ➪ **{message.text}**
-
-◈ 𝐁𝐲 ➪ **{streamtype} ▄ █ ▄ █ ▄**
-
-╚═══❰ #𝐍𝐞𝐰𝐒𝐨𝐧𝐠 ❱══❍⊱❁۪۪"""
-        if message.chat.id != LOG_GROUP_ID:
-            try:
-                await app.send_message(
-                    LOG_GROUP_ID,
-                    text=logger_text,
-                    disable_web_page_preview=True,
-                )
-            except:
-                pass
-        return
+@app.on_message(filters.command(LOGGER_COMMAND) & SUDOERS)
+@language
+async def logger(client, message, _):
+    usage = _["log_1"]
+    if len(message.command) != 2:
+        return await message.reply_text(usage)
+    state = message.text.split(None, 1)[1].strip()
+    state = state.lower()
+    if state == "enable":
+        await add_on(config.LOG)
+        await message.reply_text(_["log_2"])
+    elif state == "disable":
+        await add_off(config.LOG)
+        await message.reply_text(_["log_3"])
+    else:
+        await message.reply_text(usage)

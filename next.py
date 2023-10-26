@@ -1,121 +1,149 @@
-
 from typing import Union
-import asyncio
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-def next_pannel(_, START: Union[bool, int] = None):
-    first = [
-        InlineKeyboardButton(
-            text=_["CLOSEMENU_BUTTON"], callback_data=f"close"
+from pyrogram import filters, types
+from pyrogram.types import InlineKeyboardMarkup, Message
+
+import config
+from config import BANNED_USERS
+from strings import get_command, get_string, helpers
+from SURAJM import app
+from SURAJM.misc import SUDOERS
+from SURAJM.utils import help_pannel
+from SURAJM.utils.database import get_lang, is_commanddelete_on
+from SURAJM.utils.decorators.language import (LanguageStart,
+                                                  languageCB)
+from SURAJM.utils.inline.help import (help_back_markup,
+                                          private_help_panel)
+
+### Command
+HELP_COMMAND = get_command("HELP_COMMAND")
+
+
+@app.on_message(
+    filters.command(HELP_COMMAND)
+    & filters.private
+    & ~filters.edited
+    & ~BANNED_USERS
+)
+@app.on_callback_query(
+    filters.regex("settings_back_helper2") & ~BANNED_USERS
+)
+async def helper_private(
+    client: app, update: Union[types.Message, types.CallbackQuery]
+):
+    is_callback = isinstance(update, types.CallbackQuery)
+    if is_callback:
+        try:
+            await update.answer()
+        except:
+            pass
+        chat_id = update.message.chat.id
+        language = await get_lang(chat_id)
+        _ = get_string(language)
+        keyboard = help_pannel(_, True)
+        if update.message.photo:
+            await update.edit_message_text(
+                _["help_1"].format(config.SUPPORT_GROUP), reply_markup=keyboard
+            )
+        else:
+            await update.edit_message_text(
+                _["help_1"].format(config.SUPPORT_CHANNEL), reply_markup=keyboard
+            )
+    else:
+        chat_id = update.chat.id
+        if await is_commanddelete_on(update.chat.id):
+            try:
+                await update.delete()
+            except:
+                pass
+        language = await get_lang(chat_id)
+        _ = get_string(language)
+        keyboard = help_pannel(_)
+        await update.reply_photo(
+            photo=config.START_IMG_URL,
+            caption=_["help_1"].format(config.SUPPORT_HEHE), reply_markup=keyboard)
+
+
+@app.on_message(
+    filters.command(HELP_COMMAND)
+    & filters.group
+    & ~filters.edited
+    & ~BANNED_USERS
+)
+@LanguageStart
+async def help_com_group(client, message: Message, _):
+    keyboard = private_help_panel(_)
+    await message.reply_photo(
+        photo=config.START_IMG_URL,
+        caption=_["help_2"], reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
+@app.on_callback_query(filters.regex("help_callback") & ~BANNED_USERS)
+@languageCB
+async def helper_cb(client, CallbackQuery, _):
+    callback_data = CallbackQuery.data.strip()
+    cb = callback_data.split(None, 1)[1]
+    keyboard = help_back_markup(_)
+    if cb == "hb9":
+        if CallbackQuery.from_user.id not in SUDOERS:
+            return await CallbackQuery.answer(
+                   "😎𝗣𝗔𝗛𝗟𝗘 𓆩SURAJ𓆪 𝗞𝗢 𝗣𝗔𝗣𝗔 𝗕𝗢𝗟 𝗝𝗔𝗞𝗘 😆😆", show_alert=True
+            )
+        else:
+            await CallbackQuery.edit_message_text(
+                helpers.HELP_9, reply_markup=keyboard
+            )
+            return await CallbackQuery.answer()
+    try:
+        await CallbackQuery.answer()
+    except:
+        pass
+    if cb == "hb1":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_1, reply_markup=keyboard
         )
-    ]
-    second = [
-        InlineKeyboardButton(
-            text=_["BACK_BUTTON"],
-            callback_data=f"settings_back_helper",
-        ),
-        InlineKeyboardButton(
-            text=_["CLOSEMENU_BUTTON"], callback_data=f"close"
-        ),
-        InlineKeyboardButton(
-            text="★ ηєϰᴛ ★", callback_data="settings_back_helper"
-        ),
-    ]
-    mark = second if START else first
-    upl = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    text="αԃɱιɳ",
-                    callback_data="help_callback hb1",
-                ),
-                InlineKeyboardButton(
-                    text="αυƭɦ",
-                    callback_data="help_callback hb2",
-                ),
-            
-                InlineKeyboardButton(
-                    text="вℓσ¢к",
-                    callback_data="help_callback hb3",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="ɠ¢αʂƭ",
-                    callback_data="help_callback hb4",
-                ),
-                InlineKeyboardButton(
-                    text="ɠɓαɳ",
-                    callback_data="help_callback hb12",
-                ),
-                InlineKeyboardButton(
-                    text="ℓყɾเ¢ʂ",
-                    callback_data="help_callback hb5",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="քℓαყℓเʂƭ🎙",
-                    callback_data="help_callback hb6",
-                ),
-                InlineKeyboardButton(
-                    text="ѵσเ¢ε-¢ɦαƭ",
-                    callback_data="help_callback hb10",
-                ),
-            ],
-            [
-           
-                InlineKeyboardButton(
-                    text="ρℓαყ",
-                    callback_data="help_callback hb8",
-                ),
-            
-            
-                InlineKeyboardButton(
-                    text="ʂ𝖚∂σ",
-                    callback_data="help_callback hb9",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⚜SƬΛᏒƬ⚜",
-                    callback_data="help_callback hb11",
-                ),
-            ],
-            mark,
-        ]
-    )
-    return upl
-
-
-def next_back_markup(_):
-    upl = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    text=_["BACK_BUTTON"],
-                    callback_data=f"settings_back_helper",
-                ),
-                InlineKeyboardButton(
-                    text=_["CLOSE_BUTTON"], callback_data=f"close"
-                ),
-                InlineKeyboardButton(
-                    text="★ ηєϰᴛ ★", callback_data="settings_back_helper"
-                )
-
-            ]
-        ]
-    )
-    return upl
-
-
-def private_help_panel(_):
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text="🎭 𝐇𝐄𝐋𝐏 🎭",
-                callback_data="settings_back_helper",
-            ),
-        ],
-    ]
-    return buttons
+    elif cb == "hb2":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_2, reply_markup=keyboard
+        )
+    elif cb == "hb3":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_3, reply_markup=keyboard
+        )
+    elif cb == "hb4":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_4, reply_markup=keyboard
+        )
+    elif cb == "hb5":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_5, reply_markup=keyboard
+        )
+    elif cb == "hb6":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_6, reply_markup=keyboard
+        )
+    elif cb == "hb7":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_7, reply_markup=keyboard
+        )
+    elif cb == "hb8":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_8, reply_markup=keyboard
+        )
+    elif cb == "hb10":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_10, reply_markup=keyboard
+        )
+    elif cb == "hb11":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_11, reply_markup=keyboard
+        )
+    elif cb == "hb12":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_12, reply_markup=keyboard
+        )
+    elif cb == "hb13":
+        await CallbackQuery.edit_message_text(
+            helpers.HELP_13, reply_markup=keyboard
+        )
