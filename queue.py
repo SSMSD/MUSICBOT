@@ -1,88 +1,65 @@
 from typing import Union
 
-from config import autoclean, chatstats, userstats
-from config import time_to_seconds
-from SURAJM.misc import db
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-async def put_queue(
-    chat_id,
-    original_chat_id,
-    file,
-    title,
-    duration,
-    user,
-    vidid,
-    user_id,
-    stream,
-    forceplay: Union[bool, str] = None,
+def queue_markup(
+    _,
+    DURATION,
+    CPLAY,
+    videoid,
+    played: Union[bool, int] = None,
+    dur: Union[bool, int] = None,
 ):
-    title = title.title()
-    try:
-        duration_in_seconds = time_to_seconds(duration) - 3
-    except:
-        duration_in_seconds = 0
-    put = {
-        "title": title,
-        "dur": duration,
-        "streamtype": stream,
-        "by": user,
-        "chat_id": original_chat_id,
-        "file": file,
-        "vidid": vidid,
-        "user_id": user_id,
-        "seconds": duration_in_seconds,
-        "played": 0,
-    }
-    if forceplay:
-        check = db.get(chat_id)
-        if check:
-            check.insert(0, put)
-        else:
-            db[chat_id] = []
-            db[chat_id].append(put)
-    else:
-        db[chat_id].append(put)
-    autoclean.append(file)
-    vidid = "telegram" if vidid == "soundcloud" else vidid
-    to_append = {"vidid": vidid, "title": title}
-    if chat_id not in chatstats:
-        chatstats[chat_id] = []
-    chatstats[chat_id].append(to_append)
-    if user_id not in userstats:
-        userstats[user_id] = []
-    userstats[user_id].append(to_append)
-    return
+    not_dur = [
+        [
+            InlineKeyboardButton(
+                text=_["QU_B_1"],
+                callback_data=f"GetQueued {CPLAY}|{videoid}",
+            ),
+            InlineKeyboardButton(
+                text=_["CLOSEMENU_BUTTON"],
+                callback_data="close",
+            ),
+        ]
+    ]
+    dur = [
+        [
+            InlineKeyboardButton(
+                text=_["QU_B_2"].format(played, dur),
+                callback_data="GetTimer",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=_["QU_B_1"],
+                callback_data=f"GetQueued {CPLAY}|{videoid}",
+            ),
+            InlineKeyboardButton(
+                text=_["CLOSEMENU_BUTTON"],
+                callback_data="close",
+            ),
+        ],
+    ]
+    upl = InlineKeyboardMarkup(
+        not_dur if DURATION == "Unknown" else dur
+    )
+    return upl
 
 
-async def put_queue_index(
-    chat_id,
-    original_chat_id,
-    file,
-    title,
-    duration,
-    user,
-    vidid,
-    stream,
-    forceplay: Union[bool, str] = None,
-):
-    put = {
-        "title": title,
-        "dur": duration,
-        "streamtype": stream,
-        "by": user,
-        "chat_id": original_chat_id,
-        "file": file,
-        "vidid": vidid,
-        "seconds": 0,
-        "played": 0,
-    }
-    if forceplay:
-        check = db.get(chat_id)
-        if check:
-            check.insert(0, put)
-        else:
-            db[chat_id] = []
-            db[chat_id].append(put)
-    else:
-        db[chat_id].append(put)
+def queue_back_markup(_, CPLAY):
+    upl = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text=_["BACK_BUTTON"],
+                    callback_data=f"queue_back_timer {CPLAY}",
+                ),
+                InlineKeyboardButton(
+                    text=_["CLOSE_BUTTON"],
+                    callback_data="close",
+                ),
+            ]
+        ]
+    )
+    return upl
